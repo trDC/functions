@@ -17,3 +17,47 @@ map_value <- function(vector, map_from, map_to) {
   }
   return(x)
 }
+
+# Replace all NA values in every NUMERIC or INTEGER column only of a data table.
+replace_all_NAs <- function(x,replace_val = 0) {
+  colorder <- names(x) # to preserve the column order
+  tmp1 <- x[, !(sapply(x,class) %>% as.character() %in% c("numeric","integer")), with = F] %>% as.data.table # keep only the columns that are NOT numeric
+  tmp2 <- x[,   sapply(x,class) %>% as.character() %in% c("numeric","integer") , with = F] %>% 
+    sapply(function(y){y = ifelse(is.na(y), replace_val, y)}) %>% as.data.table
+  if(identical(tmp1,data.table())){
+    tmp3 <- tmp2
+  } else {
+    tmp3 <- cbind(tmp1,tmp2) %>% setcolorder(colorder) 
+  }
+  
+  return(tmp3)
+}
+
+# Replace all NaN values in every NUMERIC or INTEGER column only of a data table.
+replace_all_NaNs <- function(x,replace_val = 0) {
+  colorder <- names(x) # to preserve the column order
+  tmp1 <- x[, !(sapply(x,class) %>% as.character() %in% c("numeric","integer")), with = F] %>% as.data.table # keep only the columns that are NOT numeric
+  tmp2 <- x[,   sapply(x,class) %>% as.character() %in% c("numeric","integer") , with = F] %>% 
+    sapply(function(y){y = ifelse(is.nan(y), replace_val, y)}) %>% as.data.table
+  if(identical(tmp1,data.table())){
+    tmp3 <- tmp2
+  } else {
+    tmp3 <- cbind(tmp1,tmp2) %>% setcolorder(colorder)
+  }
+  
+  return(tmp3)
+}
+
+# Transforms the numeric portion of rows in a data table to a distribution (i.e. each row sums to 1)
+row_distribution <- function(x){
+  colorder <- names(x) # to preserve the column order
+  tmp1 <- x[, !(sapply(x,class) %>% as.character %in% c("numeric","integer","double")), with = F] %>% as.data.table # keep only the columns that are NOT numeric.
+  tmp2 <- x[,   sapply(x,class) %>% as.character %in% c("numeric","integer","double"), with = F] %>% # keep only the columns that are numeric
+    apply(MARGIN = 1, FUN = function(y){y/sum(y, na.rm = T)}) %>% 
+    t %>% 
+    as.data.table %>% 
+    replace_all_NAs
+  
+  y <- cbind(tmp1,tmp2) %>% setcolorder(colorder)
+  return(y)
+}
